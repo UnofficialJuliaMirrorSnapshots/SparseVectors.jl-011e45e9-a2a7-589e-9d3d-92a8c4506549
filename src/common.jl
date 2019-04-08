@@ -1,0 +1,39 @@
+# not exported, used mainly for testing
+
+_copy_convert{T}(::Type{T}, x::Vector{T}) = copy(x)
+_copy_convert{R,T}(::Type{R}, x::AbstractVector{T}) = convert(Vector{R}, x)
+
+import Base: Func, AddFun, MulFun, MaxFun, MinFun
+
+if isdefined(Base, :call)
+    import Base: call
+else
+    call(f::Function, x) = f(x)
+    call(f::Function, x, y) = f(x, y)
+    call(f::Func{1}, x) = Base.evaluate(f, x)
+    call(f::Func{2}, x, y) = Base.evaluate(f, x, y)
+end
+
+if isdefined(Base, :SubFun)
+    import Base: SubFun
+else
+    immutable SubFun <: Func{2} end
+    call(::SubFun, x, y) = x - y
+end
+
+immutable RealFun <: Func{1} end
+call(::RealFun, x) = real(x)
+
+immutable ImagFun <: Func{1} end
+call(::ImagFun, x) = imag(x)
+
+immutable ComplexFun <: Func{2} end
+call(::ComplexFun, x::Real, y::Real) = complex(x, y)
+
+immutable DotFun <: Func{2} end
+_dot(x::Number, y::Number) = conj(x) * y
+_dot(x::Real, y::Real) = x * y
+call(::DotFun, x::Number, y::Number) = _dot(x, y)
+
+@compat typealias UnaryOp Union{Function, Func{1}}
+@compat typealias BinaryOp Union{Function, Func{2}}
